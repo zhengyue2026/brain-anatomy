@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>10 层颅脑解剖爆炸图</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { width:100%; height:100%; overflow:hidden; }
+  body {
+    font-family: "Noto Sans SC", "Microsoft YaHei", "PingFang SC", sans-serif;
+    background: #F9F6F0;
+    color: #4A3F35;
+    -webkit-user-select: none; user-select: none;
+    touch-action: none;
+  }
+  #scene { position:fixed; inset:0; display:block; }
+
+  /* 顶部标题 */
+  #title-bar {
+    position: fixed; top: 18px; left: 50%; transform: translateX(-50%);
+    text-align: center; z-index: 20; pointer-events:none;
+  }
+  #title-bar h1 {
+    font-size: 22px; font-weight: 700; letter-spacing: 2px;
+    color: #6B4E3D; text-shadow: 0 1px 0 rgba(255,255,255,.6);
+  }
+  #title-bar p { font-size: 12px; color: #A89484; margin-top:4px; letter-spacing:1px; }
+
+  /* 左侧科普面板 */
+  #side-panel {
+    position: fixed; left: 20px; top: 50%; transform: translateY(-50%);
+    width: 264px; max-height: 76vh; overflow-y: auto;
+    background: rgba(255,251,245,.82); backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(180,150,120,.25);
+    border-radius: 16px; padding: 18px 18px 14px;
+    box-shadow: 0 8px 30px rgba(120,90,60,.12);
+    z-index: 15;
+    transition: transform .35s ease, opacity .35s ease;
+  }
+  #side-panel h2 {
+    font-size: 15px; color:#8B5E3C; margin-bottom:10px;
+    padding-bottom:8px; border-bottom:1px dashed rgba(180,150,120,.4);
+    display:flex; align-items:center; gap:6px;
+  }
+  #side-panel h2::before {
+    content:""; width:4px; height:16px; background:#C9885A; border-radius:2px;
+  }
+  .fact-item { margin-bottom: 12px; }
+  .fact-item h3 { font-size:13px; color:#6B4E3D; margin-bottom:4px; font-weight:600; }
+  .fact-item p { font-size:12px; line-height:1.65; color:#7A6A5C; }
+  #panel-toggle {
+    position: fixed; left: 20px; top: 20px; z-index: 16;
+    width:38px; height:38px; border-radius:10px; border:1px solid rgba(180,150,120,.3);
+    background: rgba(255,251,245,.85); backdrop-filter:blur(10px);
+    color:#8B5E3C; font-size:16px; cursor:pointer; display:none;
+    align-items:center; justify-content:center;
+  }
+  #side-panel.collapsed { transform: translateY(-50%) translateX(-300px); opacity:0; }
+
+  /* 右侧信息卡 */
+  #info-card {
+    position: fixed; right: 24px; top: 50%; transform: translateY(-50%) translateX(120%);
+    width: 320px; max-height: 80vh; overflow-y: auto;
+    background: linear-gradient(160deg, #FFF8F0 0%, #FCEFE0 100%);
+    border: 1px solid rgba(201,136,90,.35);
+    border-radius: 18px; padding: 22px 22px 18px;
+    box-shadow: 0 12px 40px rgba(140,90,50,.22);
+    z-index: 18;
+    transition: transform .4s cubic-bezier(.22,1,.36,1);
+  }
+  #info-card.show { transform: translateY(-50%) translateX(0); }
+  #info-card .close-btn {
+    position:absolute; top:10px; right:12px; width:36px; height:36px;
+    border-radius:50%; border:none; background:rgba(201,136,90,.15);
+    color:#8B5E3C; font-size:20px; cursor:pointer; line-height:1;
+    display:flex; align-items:center; justify-content:center;
+  }
+  #info-card .layer-num {
+    display:inline-block; font-size:11px; font-weight:700; color:#fff;
+    background:#C9885A; padding:3px 10px; border-radius:20px; margin-bottom:10px;
+    letter-spacing:1px;
+  }
+  #info-card h2 { font-size:22px; color:#5C3A21; margin-bottom:2px; }
+  #info-card .en { font-size:13px; color:#B08968; font-style:italic; margin-bottom:14px; font-weight:500; }
+  #info-card .section { margin-bottom:12px; }
+  #info-card .section-title {
+    font-size:12px; font-weight:700; color:#C9885A; margin-bottom:4px;
+    text-transform:uppercase; letter-spacing:1px;
+  }
+  #info-card .section p { font-size:13px; line-height:1.7; color:#6B5544; }
+  #info-card .injury {
+    background: rgba(201,136,90,.1); border-radius:10px; padding:10px 12px;
+  }
+  #info-card .injury .section-title { color:#B8542A; }
+
+  /* 底部 Dock 控制面板 */
+  #dock {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 6px; align-items: center;
+    background: rgba(255,251,245,.78); backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(180,150,120,.28);
+    border-radius: 16px; padding: 10px 12px;
+    box-shadow: 0 8px 32px rgba(120,90,60,.18);
+    z-index: 20; max-width: calc(100vw - 24px);
+    flex-wrap: wrap; justify-content: center;
+  }
+  .dock-btn {
+    display: flex; flex-direction: column; align-items: center; gap:2px;
+    min-width: 52px; padding: 7px 6px; border-radius: 12px;
+    border: 1.5px solid transparent; cursor: pointer;
+    background: transparent; transition: all .2s ease;
+    font-family: inherit;
+  }
+  .dock-btn .icon {
+    width: 34px; height: 34px; border-radius: 50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size: 13px; font-weight: 700; color:#fff;
+    box-shadow: inset 0 -2px 4px rgba(0,0,0,.12);
+    transition: all .2s ease;
+  }
+  .dock-btn .label { font-size: 10px; color:#7A6A5C; font-weight:600; white-space:nowrap; }
+  .dock-btn:hover .icon { transform: scale(1.08); }
+  .dock-btn.active { background: rgba(201,136,90,.14); border-color: rgba(201,136,90,.4); }
+  .dock-btn.active .icon { box-shadow: 0 0 0 3px rgba(201,136,90,.25), inset 0 -2px 4px rgba(0,0,0,.12); }
+  .dock-btn.inactive { opacity: .38; }
+  .dock-btn.inactive .icon { filter: grayscale(.8); }
+
+  /* 操作提示 */
+  #hint {
+    position: fixed; bottom: 96px; left: 50%; transform: translateX(-50%);
+    font-size: 12px; color: #B09A88; letter-spacing: 1px; z-index: 10;
+    pointer-events: none; text-align:center;
+  }
+
+  /* 加载遮罩 */
+  #loading {
+    position: fixed; inset:0; background:#F9F6F0; z-index:100;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    transition: opacity .6s ease;
+  }
+  #loading.hide { opacity:0; pointer-events:none; }
+  #loading .spinner {
+    width:42px; height:42px; border:3px solid rgba(201,136,90,.2);
+    border-top-color:#C9885A; border-radius:50%; animation:spin 1s linear infinite;
+  }
+  #loading p { margin-top:14px; color:#8B5E3C; font-size:14px; letter-spacing:2px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* 移动端适配 */
+  @media (max-width: 768px) {
+    #side-panel { width: 240px; left: 10px; top:auto; bottom: 130px; transform: none; max-height: 55vh; padding:14px; }
+    #side-panel.collapsed { transform: translateX(-280px); opacity:0; }
+    #panel-toggle { display: flex; }
+    #info-card { width: calc(100vw - 20px); right:10px; left:10px; top:auto; bottom: 120px; transform: translateY(200%); }
+    #info-card.show { transform: translateY(0); }
+    #title-bar h1 { font-size: 16px; }
+    #title-bar p { font-size: 10px; }
+    #dock { gap: 3px; padding: 8px 6px; bottom: 10px; flex-wrap: nowrap; }
+    .dock-btn { min-width: 0; padding: 5px 3px; flex: 1; }
+    .dock-btn .icon { width:26px; height:26px; font-size:10px; }
+    .dock-btn .label { font-size:8px; }
+    #hint { display:none; }
+  }
+</style>
+</head>
+<body>
+<div id="loading"><div class="spinner"></div><p>正在加载颅脑模型…</p></div>
+
+<div id="title-bar">
+  <h1>10 层颅脑解剖爆炸图</h1>
+  <p>CRANIAL EXPLORATION · 交互式医学教学</p>
+</div>
+
+<button id="panel-toggle" title="课外知识点">知</button>
+
+<aside id="side-panel">
+  <h2>蛛网膜囊肿 · 专题</h2>
+  <div class="fact-item">
+    <h3>什么是蛛网膜囊肿？</h3>
+    <p>蛛网膜分裂成两叶，中间包裹脑脊液形成的良性囊泡。囊壁就是蛛网膜本身，囊内液体和脑脊液成分几乎一样。多在儿童期发现，约占颅内占位的1%。</p>
+  </div>
+  <div class="fact-item">
+    <h3>它长在哪？</h3>
+    <p>最常见于中颅窝（颞部），其次是后颅窝和大脑凸面。它在蛛网膜下腔里，<b>不侵入脑组织</b>——就像脑子里的一个"水气球"。</p>
+  </div>
+  <div class="fact-item">
+    <h3>有症状吗？</h3>
+    <p>多数终身无症状，体检偶然发现。囊肿变大压迫脑或堵了脑脊液循环时，才出现头痛、癫痫、发育迟缓、局灶神经功能缺损。</p>
+  </div>
+  <div class="fact-item">
+    <h3>怎么治？</h3>
+    <p>无症状→观察随访；有症状→手术分流或造瘘，把囊液引到蛛网膜下腔或腹腔。<b>绝大多数不需要开颅切除</b>。</p>
+  </div>
+  <div class="fact-item" style="background:#fef3e2;border-left:3px solid #e8a86c;">
+    <h3 style="color:#b8651e;">课堂互动 · 小测验</h3>
+    <p style="margin-bottom:8px;">点击底部 Dock 里「囊」按钮，让囊肿显示出来。它是在脑组织里面还是外面？</p>
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <button onclick="answerQuiz(this,false)" style="text-align:left;padding:6px 10px;border:1px solid #e0d5c5;border-radius:8px;background:#fff;cursor:pointer;font-size:13px;">A. 在脑组织里面，是脑肿瘤</button>
+      <button onclick="answerQuiz(this,true)" style="text-align:left;padding:6px 10px;border:1px solid #e0d5c5;border-radius:8px;background:#fff;cursor:pointer;font-size:13px;">B. 在蛛网膜下腔里，不侵入脑组织</button>
+    </div>
+    <div id="quiz-result" style="margin-top:8px;font-size:13px;display:none;"></div>
+  </div>
+</aside>
+<script>
+function answerQuiz(btn, correct) {
+  var res = document.getElementById('quiz-result');
+  res.style.display = 'block';
+  if (correct) {
+    btn.style.background = '#d4edda';
+    btn.style.borderColor = '#28a745';
+    res.innerHTML = '<b style="color:#28a745;">答对了！</b>囊肿在蛛网膜下腔，像"水气球"漂在脑外，不侵犯脑组织。';
+  } else {
+    btn.style.background = '#f8d7da';
+    btn.style.borderColor = '#dc3545';
+    res.innerHTML = '<b style="color:#dc3545;">再想想</b>——囊肿是蛛网膜包裹的脑脊液，不侵入脑组织，不是肿瘤。';
+  }
+}
+</script>
+
+<div id="hint">拖拽旋转 · 滚轮缩放 · 点击图层查看注解</div>
+
+<aside id="info-card">
+  <button class="close-btn" onclick="closeInfo()">×</button>
+<script>
+// 移动端：默认收起科普面板
+if (window.innerWidth <= 768) {
+  document.getElementById('side-panel').classList.add('collapsed');
+}
+document.getElementById('panel-toggle').addEventListener('click', () => {
+  document.getElementById('side-panel').classList.toggle('collapsed');
+});
+</script>
+  <span class="layer-num" id="ic-num">Layer</span>
+  <h2 id="ic-cn">—</h2>
+  <div class="en" id="ic-en">—</div>
+  <div class="section">
+    <div class="section-title">结构特点</div>
+    <p id="ic-desc">—</p>
+  </div>
+  <div class="section injury">
+    <div class="section-title">受伤会怎样</div>
+    <p id="ic-injury">—</p>
+  </div>
+</aside>
+
+<nav id="dock"><!-- 按钮由 JS 生成 --></nav>
+
+<script src="vendor/three.min.js"></script>
+<script src="vendor/OrbitControls.js"></script>
+<script src="images.js"></script>
+<script>
+/* ====== 图层数据（顺序：从头皮→大脑，自上而下） ====== */
+const LAYERS = [
+  { id:'scalp',     file:'scalp.png',       cn:'头皮（皮肤层）', en:'Scalp Skin',
+    color:'#C97B5A', short:'皮',
+    contentW:2528, contentH:1311, canvasW:2528, canvasH:1312,
+    width:3.6, x:0,
+    desc:'颅脑最外层，由表皮与真皮构成，表面覆有毛发。皮肤厚而坚韧，含丰富毛囊、皮脂腺和血管，是颅顶的第一道物理屏障。',
+    injury:'头皮血供丰富，裂伤时出血多但愈合快。伤口可因帽状腱膜牵扯而裂开，需及时清创缝合，否则易引发感染。' },
+  { id:'fat',       file:'fat.png',         cn:'皮下脂肪层', en:'Subcutaneous Tissue',
+    color:'#E0A83C', short:'脂',
+    contentW:3487, contentH:1014, canvasW:3487, canvasH:1015,
+    width:3.5, x:0,
+    desc:'由致密纤维隔连接成脂肪小叶，穿行着头皮的血管、神经。该层厚实且富有弹性，起到缓冲撞击、保温的作用。',
+    injury:'外伤后易形成皮下血肿；感染可沿纤维隔蔓延，形成蜂窝织炎；血管损伤时出血可在此层广泛扩散。' },
+  { id:'galea',     file:'galea.png',       cn:'帽状腱膜', en:'Epicranial Aponeurosis (Galea)',
+    color:'#E8A4A0', short:'腱',
+    contentW:3487, contentH:1047, canvasW:3487, canvasH:1048,
+    width:3.4, x:0,
+    desc:'坚韧的纤维结缔组织板，前连额肌、后连枕肌，像一顶帽子绷紧覆盖颅顶。它是头皮三层中最坚韧的一层。',
+    injury:'腱膜完整时，即使皮肤裂开伤口也不张开；一旦腱膜同时断裂，伤口便明显裂开，必须缝合腱膜以减少张力。' },
+  { id:'peri',      file:'periosteum.png',  cn:'骨膜', en:'Pericranium',
+    color:'#D8D5D0', short:'膜',
+    contentW:3487, contentH:1078, canvasW:3487, canvasH:1078,
+    width:3.3, x:0,
+    desc:'紧贴颅骨外表面的致密结缔组织膜，富含成骨细胞和营养血管，对颅骨的生长、修复和营养至关重要。',
+    injury:'骨膜下出血在儿童可形成「骨膜下血肿」，边界不跨越骨缝；骨膜广泛剥离可影响颅骨血供，导致局部骨坏死。' },
+  { id:'skull',     file:'skull.png',       cn:'颅骨（颅盖）', en:'Calvaria (Skull Bone)',
+    color:'#D4B896', short:'颅',
+    contentW:649, contentH:313, canvasW:720, canvasH:1080,
+    contentLeft:36, contentTop:370,
+    width:3.2, x:0,
+    desc:'颅骨呈外板—板障—内板的「三明治」结构：外板厚而有弹性，内板薄而脆弱，中间板障为含静脉网的骨松质，既减重又吸震。',
+    injury:'颅骨受暴力可发生骨折；内板常比外板碎裂更严重，骨片可向内刺伤脑膜与血管，形成硬膜外血肿。' },
+  { id:'dura',      file:'dura.png',        cn:'硬脑膜', en:'Dura Mater',
+    color:'#C96A5A', short:'硬',
+    contentW:647, contentH:364, canvasW:720, canvasH:1080,
+    contentLeft:38, contentTop:360,
+    width:3.1, x:0,
+    desc:'脑膜中最厚最坚韧的一层，由致密纤维构成，紧贴颅骨内面。其内外层之间形成硬脑膜窦，回收颅内静脉血。',
+    injury:'硬脑膜动脉（脑膜中动脉）破裂可形成「硬脑膜外血肿」；硬脑膜本身撕裂可导致脑脊液漏，是神经外科常见急症。' },
+  { id:'arach',     file:'arachnoid.png',   cn:'蛛网膜', en:'Arachnoid Mater',
+    color:'#B8C8D8', short:'蛛',
+    contentW:723, contentH:254, canvasW:1121, canvasH:398,
+    contentLeft:190, contentTop:73,
+    width:3.15, x:0,
+    desc:'半透明薄膜，介于硬脑膜与软脑膜之间。它与软脑膜之间的腔隙即「蛛网膜下腔」，充满脑脊液，像水垫一样悬浮保护脑。',
+    injury:'脑表面血管破裂时血液流入蛛网膜下腔，称为「蛛网膜下腔出血」，表现为突发剧烈头痛、颈项强直，属急危重症。' },
+  { id:'cyst',      file:'cyst.png',        cn:'蛛网膜囊肿', en:'Arachnoid Cyst',
+    color:'#9AB8D8', short:'囊',
+    contentW:137, contentH:147, canvasW:137, canvasH:147,
+    contentLeft:0, contentTop:0,
+    width:0.55, x:-2.3, defaultHidden:true, cyst:true,
+    desc:'蛛网膜分裂包裹脑脊液形成的良性囊性结构，多为先天性。囊壁就是蛛网膜，囊内液体与脑脊液成分相同。',
+    injury:'多数囊肿终身无症状；当囊肿增大压迫脑组织或阻塞脑脊液循环时，可出现头痛、癫痫或局灶神经功能缺损。' },
+  { id:'pia',       file:'pia.png',         cn:'软脑膜', en:'Pia Mater',
+    color:'#D88888', short:'软',
+    contentW:638, contentH:400, canvasW:720, canvasH:1080,
+    contentLeft:41, contentTop:346,
+    width:2.9, x:0,
+    desc:'薄而透明的薄膜，紧贴脑表面并深入脑沟裂。富含血管，为脑皮质供血；它与室管膜共同形成脉络丛，产生脑脊液。',
+    injury:'软脑膜随脑表面损伤而破损，是脑膜炎常累及的层次；其血管破裂直接导致蛛网膜下腔出血。' },
+  { id:'brain',     file:'brain.png',       cn:'大脑', en:'Cerebrum',
+    color:'#D89088', short:'脑',
+    contentW:579, contentH:363, canvasW:720, canvasH:673,
+    contentLeft:75, contentTop:310,
+    width:2.8, x:0,
+    desc:'中枢神经系统最高级部位，表面布满脑回与脑沟，动静脉血管在沟回间走行。负责意识、思维、运动与感觉。',
+    injury:'外伤可致脑震荡、脑挫伤、颅内出血与脑水肿；颅内压持续升高可引发脑疝，危及生命中枢，需紧急处理。' },
+];
+/* 垂直层间距与整体下移量 */
+const SPACING = 0.65;
+const Y_OFFSET = -0.75;
+
+/* ====== Three.js 场景初始化 ====== */
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xF9F6F0);
+
+const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:false });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.getElementById('scene') || document.body.appendChild(renderer.domElement);
+renderer.domElement.id = 'scene';
+renderer.outputEncoding = THREE.sRGBEncoding;
+
+/* 正交相机（正前方，减小透视变形） */
+let frustumSize = 9.5;
+let aspect = window.innerWidth / window.innerHeight;
+const camera = new THREE.OrthographicCamera(
+  -frustumSize * aspect/2, frustumSize * aspect/2,
+  frustumSize/2, -frustumSize/2, 0.1, 100
+);
+camera.position.set(0, 0, 10);
+camera.lookAt(0, 0, 0);
+
+scene.add(new THREE.AmbientLight(0xffffff, 1.0));
+
+/* 标准 OrbitControls：拖拽旋转 + 滚轮缩放，方向经过充分测试 */
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.rotateSpeed = 0.7;
+controls.zoomSpeed = 0.8;
+controls.enablePan = false;
+controls.minZoom = 0.5;
+controls.maxZoom = 4;
+controls.zoom = 1.5;
+controls.target.set(0, 0, 0);
+
+/* ====== 创建图层 mesh ====== */
+const texLoader = new THREE.TextureLoader();
+texLoader.crossOrigin = '';   // file:// 本地图片不发跨源请求，避免 CORS 拦截
+const layerMeshes = [];
+const midIdx = (LAYERS.length - 1) / 2;
+
+let loadedCount = 0;
+let failedCount = 0;
+function hideLoading() { document.getElementById('loading').classList.add('hide'); }
+setTimeout(hideLoading, 3500);  // 兜底：3.5秒后强制隐藏
+LAYERS.forEach((layer, i) => {
+  const dataUrl = EMBEDDED_IMAGES[layer.id];
+  const tex = texLoader.load(dataUrl, () => {
+    loadedCount++;
+    if (loadedCount + failedCount >= LAYERS.length) hideLoading();
+  }, undefined, () => {
+    failedCount++;
+    console.error('纹理加载失败:', layer.id);
+    if (loadedCount + failedCount >= LAYERS.length) hideLoading();
+  });
+  tex.encoding = THREE.sRGBEncoding;
+  /* 穹顶弧面片 */
+  const cw = layer.contentW, ch = layer.contentH;
+  const h = layer.width * ch / cw;
+  const geo = new THREE.PlaneGeometry(layer.width, h, 48, 4);
+  const pos = geo.attributes.position;
+  const R = layer.width * 1.1;
+  for (let v = 0; v < pos.count; v++) {
+    const x = pos.getX(v);
+    const angle = x / R;
+    pos.setX(v, R * Math.sin(angle));
+    pos.setZ(v, R * (1 - Math.cos(angle)));
+  }
+  geo.computeVertexNormals();
+  /* 裁剪透明留白（平面UV） */
+  tex.repeat.set(cw / layer.canvasW, ch / layer.canvasH);
+  tex.offset.set(
+    (layer.contentLeft||0) / layer.canvasW,
+    1 - ((layer.contentTop||0) + ch) / layer.canvasH
+  );
+  const mat = new THREE.MeshBasicMaterial({
+    map: tex, transparent: true, side: THREE.DoubleSide,
+    alphaTest: 0.08, depthWrite: false
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  /* 展开目标位置 vs 初始叠起位置 */
+  let explodeY;
+  if (layer.cyst) {
+    explodeY = (LAYERS[6]._explodeY || 0) + Y_OFFSET;
+  } else {
+    explodeY = (midIdx - i) * SPACING + Y_OFFSET;
+  }
+  layer._explodeY = explodeY;
+  mesh.position.set(layer.x||0, (midIdx - i) * SPACING * 0.35 + Y_OFFSET*0.5, 0);  // 初始紧凑叠起
+  layer._y = 0;
+  layer._mesh = mesh; layer._idx = i;
+  mesh.userData.layer = layer;
+  mesh.userData.index = i;
+  mesh.visible = !layer.defaultHidden;
+  scene.add(mesh);
+  layerMeshes.push(mesh);
+});
+
+/* ====== Dock 按钮生成 ====== */
+const dock = document.getElementById('dock');
+const DOCK_LABELS = { scalp:'头皮', fat:'脂肪', galea:'腱膜', peri:'骨膜', skull:'颅骨', dura:'硬膜', arach:'蛛膜', cyst:'囊肿', pia:'软膜', brain:'大脑' };
+LAYERS.forEach((layer, i) => {
+  const btn = document.createElement('button');
+  btn.className = 'dock-btn' + (layer.defaultHidden ? ' inactive' : ' active');
+  btn.dataset.id = layer.id;
+  btn.innerHTML = `<div class="icon" style="background:${layer.color}">${layer.short}</div><div class="label">${DOCK_LABELS[layer.id]}</div>`;
+  btn.addEventListener('click', () => toggleLayer(layer.id, btn));
+  dock.appendChild(btn);
+});
+
+/* 顶部控制按钮：爆炸展开 + 自动旋转 */
+const topBar = document.createElement('div');
+topBar.style.cssText = 'position:fixed;top:14px;right:20px;display:flex;gap:8px;z-index:20;';
+topBar.innerHTML = `
+  <button id="explode-btn" onclick="toggleExplode()" style="padding:8px 16px;border-radius:20px;border:1px solid rgba(201,136,90,.35);background:rgba(255,255,255,.75);backdrop-filter:blur(10px);cursor:pointer;font-size:13px;font-weight:600;color:#8a5a3a;box-shadow:0 2px 8px rgba(0,0,0,.08);">💥 爆炸展开</button>
+  <button id="rotate-btn" onclick="toggleRotate()" style="padding:8px 16px;border-radius:20px;border:1px solid rgba(138,184,154,.35);background:rgba(255,255,255,.75);backdrop-filter:blur(10px);cursor:pointer;font-size:13px;font-weight:600;color:#4a7a5a;box-shadow:0 2px 8px rgba(0,0,0,.08);">🔄 自动旋转</button>
+`;
+document.body.appendChild(topBar);
+
+function toggleExplode() {
+  exploded = !exploded;
+  const b = document.getElementById('explode-btn');
+  b.textContent = exploded ? '🤏 合拢' : '💥 爆炸展开';
+}
+function toggleRotate() {
+  controls.autoRotate = !controls.autoRotate;
+  controls.autoRotateSpeed = 1.5;
+  const b = document.getElementById('rotate-btn');
+  b.textContent = controls.autoRotate ? '⏸ 停止旋转' : '🔄 自动旋转';
+}
+
+function toggleLayer(id, btn) {
+  const mesh = layerMeshes.find(m => m.userData.layer.id === id);
+  if (!mesh) return;
+  mesh.visible = !mesh.visible;
+  btn.classList.toggle('active', mesh.visible);
+  btn.classList.toggle('inactive', !mesh.visible);
+}
+
+/* ====== 点击拾取 → 信息卡 ====== */
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
+let downPos = null;
+
+renderer.domElement.addEventListener('pointerdown', e => {
+  downPos = { x:e.clientX, y:e.clientY };
+});
+renderer.domElement.addEventListener('pointerup', e => {
+  if (!downPos) return;
+  const dx = e.clientX - downPos.x, dy = e.clientY - downPos.y;
+  downPos = null;
+  if (dx*dx + dy*dy > 25) return;  // 拖拽不触发点击
+  pick(e);
+});
+
+function pick(e) {
+  pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
+  pointer.y = -(e.clientY / window.innerHeight) * 2 + 1;
+  raycaster.setFromCamera(pointer, camera);
+  const visibleMeshes = layerMeshes.filter(m => m.visible);
+  const hits = raycaster.intersectObjects(visibleMeshes, false);
+  if (hits.length) {
+    showInfo(hits[0].object.userData.layer);
+  } else {
+    closeInfo();
+  }
+}
+
+function showInfo(layer) {
+  document.getElementById('ic-num').textContent = 'LAYER ' + (LAYERS.indexOf(layer)+1);
+  document.getElementById('ic-cn').textContent = layer.cn;
+  document.getElementById('ic-en').textContent = layer.en;
+  document.getElementById('ic-desc').textContent = layer.desc;
+  document.getElementById('ic-injury').textContent = layer.injury;
+  document.getElementById('info-card').classList.add('show');
+}
+function closeInfo() {
+  document.getElementById('info-card').classList.remove('show');
+}
+
+/* ====== 自适应窗口 ====== */
+function onResize() {
+  aspect = window.innerWidth / window.innerHeight;
+  camera.left = -frustumSize * aspect/2;
+  camera.right = frustumSize * aspect/2;
+  camera.top = frustumSize/2;
+  camera.bottom = -frustumSize/2;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+}
+window.addEventListener('resize', onResize);
+
+/* 移动端：如果太窄，扩大 frustum 让模型适配 */
+function fitCamera() {
+  if (window.innerWidth < 768) { frustumSize = 14; }
+  else { frustumSize = 11.5; }
+  onResize();
+}
+fitCamera();
+
+/* ====== 渲染循环 ====== */
+let exploded = false;
+function toggleExplode() {
+  exploded = !exploded;
+  document.getElementById('explode-btn').textContent = exploded ? '合拢' : '爆炸展开';
+}
+function animate() {
+  requestAnimationFrame(animate);
+  // 层位置插值动画
+  LAYERS.forEach(layer => {
+    if (!layer._mesh) return;
+    const closedY = (midIdx - layer._idx) * SPACING * 0.35 + Y_OFFSET*0.5; const targetY = exploded ? layer._explodeY : closedY;
+    layer._y += (targetY - layer._y) * 0.06;
+    layer._mesh.position.y = layer._y;
+  });
+  controls.update();
+  renderer.render(scene, camera);
+}
+animate();
+</script>
+</body>
+</html>
